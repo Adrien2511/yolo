@@ -92,11 +92,12 @@ class YOLO(object):
 
     def image_detection(self, img):
         start =timer() #prends la valeur du timer
-
+        topvec, leftvec, bottomvec, rightvec = [], [], [], []
         if self.model_image_size != (None,None):  #si la taille d'image n'est pas nul
             assert self.model_image_size[0]%32 == 0, 'Multiple de 32 nécessaire'   #vérifie que la taille de l'image est bien un multiple de 32
             assert self.model_image_size[1] % 32 == 0, 'Multiple de 32 nécessaire'
             box = letterbox_image(img, tuple(reversed(self.model_image_size))) #utilisation de la fonction letterbox_image de yolo3.utils pour avoir la box
+
 
         else: #si la taille de l'image est nulle
             new_img =(img.width - (img.width % 32),img.height - (img.heaight % 32)) #création de la nouvelle image
@@ -134,6 +135,10 @@ class YOLO(object):
             bottom = min(img.size[1], np.floor(bottom + 0.5).astype('int32'))
             right = min(img.size[0], np.floor(right + 0.5).astype('int32'))
             print(label, (left, top), (right, bottom)) #permet d'afficher le nom de la classe , le score de sa prediction, les valeurs de position de la boxe
+            leftvec.append(left)
+            topvec.append(top)
+            rightvec.append(right)
+            bottomvec.append(bottom)
 
             #permet de calculer l'endroit où l'on va écrire les informations de la box
             if top - size_label[1] >=0:
@@ -150,7 +155,7 @@ class YOLO(object):
 
         end = timer() #prends la valeur du timer
         print(end-start)# affiche la différence de temps
-        return img
+        return img , leftvec, topvec, rightvec, bottomvec
 
 
     # permet de lire le fichier avec les classes et d'enregistrer les valeurs
@@ -163,47 +168,3 @@ class YOLO(object):
 
     def close(self):
         self.sess.close()  # permet de fermer la session
-"""
-def video_detection(yolo, path_video, path_sortie=""):
-    import cv2 # importation d'open cv
-    cap= cv2.VideoCapture(path_video) #ouverture de path_video avec open_cv
-    if not cap.isOpened(): # si ça ne s'ouvre pas
-        raise IOError("Impossible d'ouvrire la vidéo")
-    video_Fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
-    fps = cap.get(cv2.CAP_PROP_FPS) # enregistre les fps
-    size =  (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))) #permet d'avoir la hauteur et la largeur de la vidéo
-
-    sortie = True if path_sortie != "" else False #permet de savoir si le fichier de sortie est vide ou pas
-    if sortie:     #si le fichier de sortie est pas vide
-        print("!!! Type:", type(path_sortie),type(video_Fourcc), type(fps), type(size))
-        out = cv2.VideoWriter(path_sortie, video_Fourcc, fps, size)
-
-    time = 0 #création d'une variable temps
-    acc_fps = 0
-    fps2 = "Fps : ?"
-    time_avant = timer()
-    while True:               # permet de garder ouvert tant qu'on veut
-        rv, frame = cap.read() # lecture de la video
-        img = Image.fromarray(frame) #crée une mémoire de l'image
-        img = yolo.image_detection(img) #appelle la fonction image_detection de la classe yolo
-        rep = np.asarray(img)
-        acc_time = timer()
-        time_fin = acc_time -time_avant
-        time_avant = acc_time
-        time = time + time_fin
-        acc_fps = acc_fps+1
-        if time>1:
-            time = time - 1
-            fps2="Fps : " +str()
-            acc_fps = 0
-        cv2.putText(rep,text=fps2, org=(3, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX,fontScale=0.50, color=(255, 0, 0), thickness=2) #permet d'écrire le nombre d'fps
-        cv2.namedWindow("Resultat",cv2.WINDOW_NORMAL) #donne le non à la fenêtre
-        cv2.imshow("Resultat", rep) #affichage de la fenêtre
-        if sortie:
-            out.write(rep)
-        if cv2.waitKey(1) & 0xFF == ord('q'): #permet de fermer la fenêtre quand on appuie sur q
-            break
-
-
-    yolo.close() #fermeture de yolo
-"""
